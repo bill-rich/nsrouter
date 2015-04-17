@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+echo $1 $2 $3 $4
+
+setup_router() {
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+
+	ip netns add router
+	ip link add veth0 type veth peer name veth1 netns router
+	ip addr add 169.254.221.1/24 dev veth0
+	ip link set up dev veth0
+	ip route add 169.254.221.2/32 dev veth0
+
+	ip netns exec router ip addr add 169.254.221.2/24 dev veth1
+	ip netns exec router ip link set up dev veth1
+	ip netns exec router ip route add default via 169.254.221.1
+
+	iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+}
+
+add_port() {
+	echo "Adding port"
+	proxy="$1"
+	remote_ip="$2"
+	port="$3"
+	forwarded_port="$4"
+
+	echo ip route add $remote_ip via 169.254.221.2 dev veth0
+	ip route add $remote_ip via 169.254.221.2 dev veth0
+
+	ip netns exec router iptables -t nat -A PREROUTING -d $remote_ip/32 -p tcp -m tcp --dport $port -j REDIRECT --to-ports $forwarded_port
+	ip netns exec router ssh root@$proxy -L $forwarded_port:$remote_ip:$port -Nf
+}
+
+if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ]; then
+	add_port $1 $2 $3 $4
+elif [ -z $1 ]; then
+	setup_router
+else
+	echo "nsrouter - create nsrouter"
+	echo "nsrouter proxy_address remote_ip port local_forwarded_port - add port to nsrouter"
+fi
