@@ -30,7 +30,9 @@ add_port() {
 	echo ip route add $remote_ip via 169.254.221.2 dev veth0
 	ip route add $remote_ip via 169.254.221.2 dev veth0
 
+	echo ip netns exec router iptables -t nat -A PREROUTING -d $remote_ip/32 -p tcp -m tcp --dport $port -j REDIRECT --to-ports $forwarded_port
 	ip netns exec router iptables -t nat -A PREROUTING -d $remote_ip/32 -p tcp -m tcp --dport $port -j REDIRECT --to-ports $forwarded_port
+	echo ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf
 	ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf
 }
 
