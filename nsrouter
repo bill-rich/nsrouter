@@ -34,8 +34,8 @@ add_port() {
 	ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf
 }
 
-if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ]; then
-	add_port $1 $2 $3 $4
+if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ]; then
+	add_port $1 $2 $3 $4 $5 $6
 elif [ -z $1 ]; then
 	setup_router
 else
