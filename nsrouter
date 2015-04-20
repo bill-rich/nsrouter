@@ -33,7 +33,10 @@ add_port() {
 	echo ip netns exec router iptables -t nat -A PREROUTING -d $remote_ip/32 -p tcp -m tcp --dport $port -j REDIRECT --to-ports $forwarded_port
 	ip netns exec router iptables -t nat -A PREROUTING -d $remote_ip/32 -p tcp -m tcp --dport $port -j REDIRECT --to-ports $forwarded_port
 	echo ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf
-	ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf
+	while ! ip netns exec router sshpass -p "$vcenter_pass" ssh $vcenter_user@$proxy -L $forwarded_port:$remote_ip:$port -Nf; do
+		echo "SSH Failure; retrying in 5"
+		sleep 5
+	done
 }
 
 if [ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -n "$6" ]; then
